@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Бродилка</title>
+    <style>
+        /* Общие стили */
+        .center-text {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .game-field {
+            width: 100%;
+            max-width: 1400px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* Стиль фишек */
+        .chip {
+            position: absolute;
+            width: 50px; /* Размер фишки */
+            height: 50px; /* Размер фишки */
+        }
+
+        .chip_bot {
+            background-image: url('public/images/chip_bot.png');
+            background-size: cover;
+        }
+
+        .chip_player {
+            background-image: url('public/images/chip_player.png');
+            background-size: cover;
+        }
+
+        /* Стиль кубиков */
+        .dice {
+            width: 50px;
+            height: 50px;
+            display: inline-block;
+            background-size: cover;
+            margin: 0 10px;
+        }
+
+        /* Стиль помощи */
+        .help-img {
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+<h1>Бродилка</h1>
+
+<!-- Основная картинка -->
+<div id="game-field">
+    <img src="public/images/field.jpg" alt="Game Field" class="game-field">
+
+    <!-- Фишки, -->
+    {% for field in coordinates %}
+        <div class="chip chip_bot" style="top: {{ field.y + 70 }}px; left: {{ field.x + 30 }}px;"></div>
+        <div class="chip chip_player" style="top: {{ field.y + 30 }}px; left: {{ field.x + 30 }}px;"></div>
+    {% endfor %}
+</div>
+
+<!-- Кубики -->
+<h2 class="center-text">Бросок кубиков</h2>
+<div class="center-text">
+    <button onclick="rollDice()">Бросить кубики</button>
+</div>
+<div id="dice-container" class="center-text">
+    <div id="dice1" class="dice"></div>
+    <div id="dice2" class="dice"></div>
+</div>
+
+<!-- Картинка с помощью -->
+<h2 class="center-text">Помощь</h2>
+<img src="public/images/help.jpg" alt="Help" class="help-img">
+
+<script>
+    function rollDice() {
+        // Генерация случайных значений для двух кубиков
+        var dice1 = Math.floor(Math.random() * 6) + 1; // 1-6
+        var dice2 = Math.floor(Math.random() * 6) + 1; // 1-6
+
+        // Обновление изображений кубиков на экране
+        document.getElementById('dice1').style.backgroundImage = 'url("public/images/dice' + dice1 + '.png")';
+        document.getElementById('dice2').style.backgroundImage = 'url("public/images/dice' + dice2 + '.png")';
+
+        // Здесь можно добавить логику для перемещения фишки пользователя в зависимости от результата
+        console.log('Кубик 1:', dice1, 'Кубик 2:', dice2);
+    }
+</script>
+</body>
+</html>
