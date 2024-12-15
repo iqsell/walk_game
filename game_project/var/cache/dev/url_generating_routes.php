@@ -5,5 +5,11 @@
 return [
     '_preview_error' => [['code', '_format'], ['_controller' => 'error_controller::preview', '_format' => 'html'], ['code' => '\\d+'], [['variable', '.', '[^/]++', '_format', true], ['variable', '/', '\\d+', 'code', true], ['text', '/_error']], [], [], []],
     'field' => [[], ['_controller' => 'App\\Controller\\FieldController::index'], [], [['text', '/field']], [], [], []],
+    'update_player_position' => [[], ['_controller' => 'App\\Controller\\FieldController::updatePlayerPosition'], [], [['text', '/update-player-position']], [], [], []],
+    'reset_game' => [[], ['_controller' => 'App\\Controller\\FieldController::resetGame'], [], [['text', '/reset-game']], [], [], []],
+    'move_bot' => [[], ['_controller' => 'App\\Controller\\FieldController::moveBot'], [], [['text', '/move-bot']], [], [], []],
     'App\Controller\FieldController::index' => [[], ['_controller' => 'App\\Controller\\FieldController::index'], [], [['text', '/field']], [], [], []],
+    'App\Controller\FieldController::updatePlayerPosition' => [[], ['_controller' => 'App\\Controller\\FieldController::updatePlayerPosition'], [], [['text', '/update-player-position']], [], [], []],
+    'App\Controller\FieldController::resetGame' => [[], ['_controller' => 'App\\Controller\\FieldController::resetGame'], [], [['text', '/reset-game']], [], [], []],
+    'App\Controller\FieldController::moveBot' => [[], ['_controller' => 'App\\Controller\\FieldController::moveBot'], [], [['text', '/move-bot']], [], [], []],
 ];

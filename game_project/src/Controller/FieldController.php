@@ -51,21 +51,17 @@ class FieldController extends AbstractController
     #[Route('/update-player-position', name: 'update_player_position', methods: ['POST'])]
     public function updatePlayerPosition(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
-        // Получаем данные из запроса (результат броска кубиков)
         $data = json_decode($request->getContent(), true);
         $diceResult = $data['diceResult'] ?? 0;
 
-        // Проверяем наличие игрока (реального)
         $player = $entityManager->getRepository(Player::class)->findOneBy(['isBot' => false]);
         if (!$player) {
             return new JsonResponse(['error' => 'Player not found'], Response::HTTP_NOT_FOUND);
         }
 
-        // Перемещаем игрока
         $currentCellId = $player->getCurrentCell();
         $newCellId = $currentCellId + $diceResult;
 
-        // Ограничиваем перемещение на клетке 36
         if ($newCellId >= 36) {
             $newCellId = 36; // Игрок фиксируется на клетке 36
         }
@@ -80,14 +76,81 @@ class FieldController extends AbstractController
             ];
         }
 
-        // Обновляем клетку игрока
+        // Перемещаем игрока на новое поле
         $player->setCurrentCell($newCellId);
-        $entityManager->flush();
+        $entityManager->flush();  // Обновляем позицию игрока
 
-        // Получаем новые координаты игрока
+        // Проверка на специальные поля
+        $activeFields = [12, 23, 29, 35];
+        if (in_array($newCellId, $activeFields)) {
+            // Если попали на специальное поле, откидываем на 3 клетки назад
+            $newCellId -= 3;
+            $player->setCurrentCell($newCellId);
+            $entityManager->flush();  // Обновляем позицию игрока после откидывания
+        }
+
+        // Дополнительные специальные поля с бонусами
+        $activeFields1 = [7, 27];
+        if (in_array($newCellId, $activeFields1)) {
+            // Если попали на специальное поле, двигаем на 4 клетки вперед
+            $newCellId += 4;
+            $player->setCurrentCell($newCellId);
+            $entityManager->flush();  // Обновляем позицию игрока после перемещения вперед
+        }
+
+        $activeFields2 = [14];
+        if (in_array($newCellId, $activeFields2)) {
+            // Если попали на специальное поле, переносим на клетку 22
+            $newCellId = 22;
+            $player->setCurrentCell($newCellId);
+            $entityManager->flush();  // Обновляем позицию игрока после перемещения
+        }
+
+        // Добавление случайных действий на клетки 5, 11, 16, 25, 32
+        $specialFields = [5, 11, 16, 25, 32];
+        if (in_array($newCellId, $specialFields)) {
+            $action = rand(1, 4); // Выбираем одно из 4 возможных действий случайным образом
+
+            switch ($action) {
+                case 1:
+                    // Игрок перемещается на 4 клетки вперед
+                    $newCellId += 4;
+                    break;
+                case 2:
+                    // Игрок перемещается на 4 клетки назад
+                    $newCellId -= 4;
+                    break;
+                case 3:
+                    // Противник перемещается на 4 клетки вперед
+                    $opponent = $entityManager->getRepository(Player::class)->findOneBy(['isBot' => true]);
+                    if ($opponent) {
+                        $opponentNewCellId = $opponent->getCurrentCell() + 4;
+                        if ($opponentNewCellId < 36) {
+                            $opponent->setCurrentCell($opponentNewCellId);
+                            $entityManager->flush();
+                        }
+                    }
+                    break;
+                case 4:
+                    // Противник перемещается на 4 клетки назад
+                    $opponent = $entityManager->getRepository(Player::class)->findOneBy(['isBot' => true]);
+                    if ($opponent) {
+                        $opponentNewCellId = $opponent->getCurrentCell() - 4;
+                        if ($opponentNewCellId > 0) {
+                            $opponent->setCurrentCell($opponentNewCellId);
+                            $entityManager->flush();
+                        }
+                    }
+                    break;
+            }
+
+            // После выполнения действия, обновляем позицию игрока
+            $player->setCurrentCell($newCellId);
+            $entityManager->flush(); // Обновляем позицию игрока
+        }
+
         $newField = $entityManager->getRepository(Field::class)->find($newCellId);
 
-        // Проверка на победу
         $winMessage = '';
         if ($newCellId === 36) {
             $winMessage = 'Вы победили!';
@@ -95,13 +158,17 @@ class FieldController extends AbstractController
 
         return new JsonResponse([
             'steps' => $steps,
-            'winMessage' => $winMessage, // Отправляем сообщение о победе
+            'winMessage' => $winMessage,
             'playerPosition' => [
                 'x' => $newField->getX(),
                 'y' => $newField->getY(),
             ],
         ]);
     }
+
+
+
+
 
 
     #[Route('/reset-game', name: 'reset_game', methods: ['POST'])]
@@ -137,12 +204,18 @@ class FieldController extends AbstractController
         $currentCell = $bot->getCurrentCell();
         $newCellId = $currentCell + $diceResult;
 
+        // Проверка на активные поля
+        $activeFields = [12, 23, 29, 35];
+        if (in_array($newCellId, $activeFields)) {
+            $newCellId -= 3; // Возвращаем игрока на 3 клетки назад
+        }
+
         // Если новая клетка больше 36, фиксируем бота на клетке 36
         if ($newCellId >= 36) {
             $newCellId = 36;
         }
 
-        // Генерируем список шагов
+        // Генерация списка шагов
         $steps = [];
         for ($i = $currentCell + 1; $i <= $newCellId; $i++) {
             $field = $entityManager->getRepository(Field::class)->find($i);
@@ -150,6 +223,53 @@ class FieldController extends AbstractController
                 'x' => $field->getX(),
                 'y' => $field->getY(),
             ];
+        }
+
+        // Проверка для специальных полей 5, 11, 16, 25, 32
+        $specialFields = [5, 11, 16, 25, 32];
+        if (in_array($newCellId, $specialFields)) {
+            $action = rand(1, 4); // Выбираем одно из 4 возможных действий случайным образом
+
+            switch ($action) {
+                case 1:
+                    // Бот перемещается на 4 клетки вперед
+                    $newCellId += 4;
+                    break;
+                case 2:
+                    // Бот перемещается на 4 клетки назад
+                    $newCellId -= 4;
+                    break;
+                case 3:
+                    // Противник (игрок) перемещается на 4 клетки вперед
+                    $player = $entityManager->getRepository(Player::class)->findOneBy(['isBot' => false]);
+                    if ($player) {
+                        $playerNewCellId = $player->getCurrentCell() + 4;
+                        if ($playerNewCellId < 36) {
+                            $player->setCurrentCell($playerNewCellId);
+                            $entityManager->flush();
+                        }
+                    }
+                    break;
+                case 4:
+                    // Противник (игрок) перемещается на 4 клетки назад
+                    $player = $entityManager->getRepository(Player::class)->findOneBy(['isBot' => false]);
+                    if ($player) {
+                        $playerNewCellId = $player->getCurrentCell() - 4;
+                        if ($playerNewCellId > 0) {
+                            $player->setCurrentCell($playerNewCellId);
+                            $entityManager->flush();
+                        }
+                    }
+                    break;
+            }
+
+            // После выполнения действия, обновляем позицию бота
+            $bot->setCurrentCell($newCellId);
+            $entityManager->flush(); // Обновляем позицию бота
+        } else {
+            // Если бот не попал на специальное поле, сразу обновляем его координаты
+            $bot->setCurrentCell($newCellId);
+            $entityManager->flush();
         }
 
         // Обновляем клетку бота
@@ -171,6 +291,8 @@ class FieldController extends AbstractController
             'botPosition' => ['x' => $steps[count($steps) - 1]['x'], 'y' => $steps[count($steps) - 1]['y']],
         ]);
     }
+
+
 
 
 
