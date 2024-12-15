@@ -10,6 +10,7 @@ return [
     [ // $staticRoutes
         '/field' => [[['_route' => 'field', '_controller' => 'App\\Controller\\FieldController::index'], null, null, null, false, false, null]],
         '/update-player-position' => [[['_route' => 'update_player_position', '_controller' => 'App\\Controller\\FieldController::updatePlayerPosition'], null, ['POST' => 0], null, false, false, null]],
+        '/reset-game' => [[['_route' => 'reset_game', '_controller' => 'App\\Controller\\FieldController::resetGame'], null, ['POST' => 0], null, false, false, null]],
     ],
     [ // $regexpList
         0 => '{^(?'

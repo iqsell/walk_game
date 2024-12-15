@@ -48,7 +48,6 @@ class FieldController extends AbstractController
         ]);
     }
 
-
     #[Route('/update-player-position', name: 'update_player_position', methods: ['POST'])]
     public function updatePlayerPosition(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
@@ -66,10 +65,9 @@ class FieldController extends AbstractController
         $currentCellId = $player->getCurrentCell();
         $newCellId = $currentCellId + $diceResult;
 
-        // Учитываем границы игрового поля
-        $fieldCount = $entityManager->getRepository(Field::class)->count([]);
-        if ($newCellId > $fieldCount) {
-            $newCellId = $newCellId % $fieldCount; // Циклическое перемещение
+        // Ограничиваем перемещение на клетке 36
+        if ($newCellId >= 36) {
+            $newCellId = 36; // Игрок фиксируется на клетке 36
         }
 
         // Обновляем клетку игрока
@@ -79,14 +77,43 @@ class FieldController extends AbstractController
         // Получаем новые координаты игрока
         $newField = $entityManager->getRepository(Field::class)->find($newCellId);
 
+        // Проверка на победу
+        $winMessage = '';
+        if ($newCellId === 36) {
+            $winMessage = 'Вы победили!';
+        }
+
         return new JsonResponse([
             'newCoordinates' => [
                 'id' => $newField->getId(),
                 'x' => $newField->getX(),
                 'y' => $newField->getY(),
             ],
+            'winMessage' => $winMessage, // Отправляем сообщение о победе
         ]);
     }
+
+    #[Route('/reset-game', name: 'reset_game', methods: ['POST'])]
+    public function resetGame(EntityManagerInterface $entityManager): JsonResponse
+    {
+        // Находим всех игроков (реальных и ботов)
+        $players = $entityManager->getRepository(Player::class)->findAll();
+
+        foreach ($players as $player) {
+            // Сброс позиции игрока на начальную клетку (например, клетка с ID 1)
+            $player->setCurrentCell(1);  // Предполагаем, что начальная клетка - клетка с ID 1
+        }
+
+        // Сохраняем изменения в базе данных
+        $entityManager->flush();
+
+        return new JsonResponse(['message' => 'Игра сброшена, начните заново']);
+    }
+
+
+
+
+
 
 
 

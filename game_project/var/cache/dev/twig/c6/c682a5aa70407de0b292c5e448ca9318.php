@@ -101,43 +101,42 @@ class __TwigTemplate_ac05a1fb272991842b2de81f437f9dc1 extends Template
 </head>
 <body>
 <h1>Бродилка</h1>
-
 <!-- Основная картинка -->
 <div id=\"game-field\">
     <img src=\"public/images/field.jpg\" alt=\"Game Field\" class=\"game-field\">
 
     <!-- Фишки, -->
     ";
-        // line 66
+        // line 65
         $context['_parent'] = $context;
-        $context['_seq'] = CoreExtension::ensureTraversable((isset($context["coordinates"]) || array_key_exists("coordinates", $context) ? $context["coordinates"] : (function () { throw new RuntimeError('Variable "coordinates" does not exist.', 66, $this->source); })()));
+        $context['_seq'] = CoreExtension::ensureTraversable((isset($context["coordinates"]) || array_key_exists("coordinates", $context) ? $context["coordinates"] : (function () { throw new RuntimeError('Variable "coordinates" does not exist.', 65, $this->source); })()));
         foreach ($context['_seq'] as $context["_key"] => $context["field"]) {
-            // line 67
+            // line 66
             yield "        ";
-            if (CoreExtension::getAttribute($this->env, $this->source, $context["field"], "isBot", [], "any", false, false, false, 67)) {
-                // line 68
+            if (CoreExtension::getAttribute($this->env, $this->source, $context["field"], "isBot", [], "any", false, false, false, 66)) {
+                // line 67
                 yield "            <div class=\"chip chip_bot\" style=\"top: ";
-                yield $this->env->getRuntime('Twig\Runtime\EscaperRuntime')->escape((CoreExtension::getAttribute($this->env, $this->source, $context["field"], "y", [], "any", false, false, false, 68) + 70), "html", null, true);
+                yield $this->env->getRuntime('Twig\Runtime\EscaperRuntime')->escape((CoreExtension::getAttribute($this->env, $this->source, $context["field"], "y", [], "any", false, false, false, 67) + 70), "html", null, true);
                 yield "px; left: ";
-                yield $this->env->getRuntime('Twig\Runtime\EscaperRuntime')->escape((CoreExtension::getAttribute($this->env, $this->source, $context["field"], "x", [], "any", false, false, false, 68) + 30), "html", null, true);
+                yield $this->env->getRuntime('Twig\Runtime\EscaperRuntime')->escape((CoreExtension::getAttribute($this->env, $this->source, $context["field"], "x", [], "any", false, false, false, 67) + 30), "html", null, true);
                 yield "px;\"></div>
         ";
             } else {
-                // line 70
+                // line 69
                 yield "            <div class=\"chip chip_player\" style=\"top: ";
-                yield $this->env->getRuntime('Twig\Runtime\EscaperRuntime')->escape((CoreExtension::getAttribute($this->env, $this->source, $context["field"], "y", [], "any", false, false, false, 70) + 30), "html", null, true);
+                yield $this->env->getRuntime('Twig\Runtime\EscaperRuntime')->escape((CoreExtension::getAttribute($this->env, $this->source, $context["field"], "y", [], "any", false, false, false, 69) + 30), "html", null, true);
                 yield "px; left: ";
-                yield $this->env->getRuntime('Twig\Runtime\EscaperRuntime')->escape((CoreExtension::getAttribute($this->env, $this->source, $context["field"], "x", [], "any", false, false, false, 70) + 30), "html", null, true);
+                yield $this->env->getRuntime('Twig\Runtime\EscaperRuntime')->escape((CoreExtension::getAttribute($this->env, $this->source, $context["field"], "x", [], "any", false, false, false, 69) + 30), "html", null, true);
                 yield "px;\"></div>
         ";
             }
-            // line 72
+            // line 71
             yield "    ";
         }
         $_parent = $context['_parent'];
         unset($context['_seq'], $context['_key'], $context['field'], $context['_parent']);
         $context = array_intersect_key($context, $_parent) + $_parent;
-        // line 73
+        // line 72
         yield "
 </div>
 
@@ -185,10 +184,59 @@ class __TwigTemplate_ac05a1fb272991842b2de81f437f9dc1 extends Template
                 const playerChip = document.querySelector('.chip_player');
                 playerChip.style.top = (data.newCoordinates.y + 30) + 'px';
                 playerChip.style.left = (data.newCoordinates.x + 30) + 'px';
+
+                // Если есть сообщение о победе, показываем его
+                if (data.winMessage) {
+                    alert(data.winMessage);  // Покажем сообщение победы
+                    showRestartButton(); // Покажем кнопку для перезапуска игры
+                }
             })
             .catch(error => console.error('Ошибка:', error));
     }
+
+    // Функция для отображения кнопки \"Начать заново\"
+    function showRestartButton() {
+        // Создаем кнопку \"Начать заново\"
+        const restartButton = document.createElement('button');
+        restartButton.textContent = 'Начать заново';
+        restartButton.onclick = function() {
+            resetGame();  // Вызовем функцию для сброса игры
+        };
+
+        // Стилевое позиционирование кнопки
+        restartButton.style.position = 'absolute';
+        restartButton.style.top = '350px'; // Отступ от верхней границы, под картинкой
+        restartButton.style.left = '30px'; // Отступ слева
+        restartButton.style.padding = '10px 20px';
+        restartButton.style.backgroundColor = '#4CAF50'; // Зеленый цвет
+        restartButton.style.color = 'white';
+        restartButton.style.border = 'none';
+        restartButton.style.borderRadius = '5px';
+        restartButton.style.fontSize = '16px';
+
+        // Добавляем кнопку на страницу
+        document.body.appendChild(restartButton);
+    }
+
+    // Функция для сброса игры
+    function resetGame() {
+        fetch('/reset-game', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);  // Показать сообщение о сбросе
+                location.reload();  // Перезагружаем страницу для перезапуска игры
+            })
+            .catch(error => console.error('Ошибка:', error));
+    }
+    
 </script>
+
+
 </body>
 </html>
 ";
@@ -219,7 +267,7 @@ class __TwigTemplate_ac05a1fb272991842b2de81f437f9dc1 extends Template
      */
     public function getDebugInfo(): array
     {
-        return array (  141 => 73,  135 => 72,  127 => 70,  119 => 68,  116 => 67,  112 => 66,  45 => 1,);
+        return array (  140 => 72,  134 => 71,  126 => 69,  118 => 67,  115 => 66,  111 => 65,  45 => 1,);
     }
 
     public function getSourceContext(): Source
@@ -283,7 +331,6 @@ class __TwigTemplate_ac05a1fb272991842b2de81f437f9dc1 extends Template
 </head>
 <body>
 <h1>Бродилка</h1>
-
 <!-- Основная картинка -->
 <div id=\"game-field\">
     <img src=\"public/images/field.jpg\" alt=\"Game Field\" class=\"game-field\">
@@ -343,10 +390,59 @@ class __TwigTemplate_ac05a1fb272991842b2de81f437f9dc1 extends Template
                 const playerChip = document.querySelector('.chip_player');
                 playerChip.style.top = (data.newCoordinates.y + 30) + 'px';
                 playerChip.style.left = (data.newCoordinates.x + 30) + 'px';
+
+                // Если есть сообщение о победе, показываем его
+                if (data.winMessage) {
+                    alert(data.winMessage);  // Покажем сообщение победы
+                    showRestartButton(); // Покажем кнопку для перезапуска игры
+                }
             })
             .catch(error => console.error('Ошибка:', error));
     }
+
+    // Функция для отображения кнопки \"Начать заново\"
+    function showRestartButton() {
+        // Создаем кнопку \"Начать заново\"
+        const restartButton = document.createElement('button');
+        restartButton.textContent = 'Начать заново';
+        restartButton.onclick = function() {
+            resetGame();  // Вызовем функцию для сброса игры
+        };
+
+        // Стилевое позиционирование кнопки
+        restartButton.style.position = 'absolute';
+        restartButton.style.top = '350px'; // Отступ от верхней границы, под картинкой
+        restartButton.style.left = '30px'; // Отступ слева
+        restartButton.style.padding = '10px 20px';
+        restartButton.style.backgroundColor = '#4CAF50'; // Зеленый цвет
+        restartButton.style.color = 'white';
+        restartButton.style.border = 'none';
+        restartButton.style.borderRadius = '5px';
+        restartButton.style.fontSize = '16px';
+
+        // Добавляем кнопку на страницу
+        document.body.appendChild(restartButton);
+    }
+
+    // Функция для сброса игры
+    function resetGame() {
+        fetch('/reset-game', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);  // Показать сообщение о сбросе
+                location.reload();  // Перезагружаем страницу для перезапуска игры
+            })
+            .catch(error => console.error('Ошибка:', error));
+    }
+    
 </script>
+
+
 </body>
 </html>
 ", "field/index.html.twig", "C:\\Users\\gwelk\\PhpstormProjects\\walking_game\\game_project\\templates\\field\\index.html.twig");

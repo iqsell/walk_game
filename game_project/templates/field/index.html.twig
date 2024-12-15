@@ -57,7 +57,6 @@
 </head>
 <body>
 <h1>Бродилка</h1>
-
 <!-- Основная картинка -->
 <div id="game-field">
     <img src="public/images/field.jpg" alt="Game Field" class="game-field">
@@ -117,9 +116,58 @@
                 const playerChip = document.querySelector('.chip_player');
                 playerChip.style.top = (data.newCoordinates.y + 30) + 'px';
                 playerChip.style.left = (data.newCoordinates.x + 30) + 'px';
+
+                // Если есть сообщение о победе, показываем его
+                if (data.winMessage) {
+                    alert(data.winMessage);  // Покажем сообщение победы
+                    showRestartButton(); // Покажем кнопку для перезапуска игры
+                }
             })
             .catch(error => console.error('Ошибка:', error));
     }
+
+    // Функция для отображения кнопки "Начать заново"
+    function showRestartButton() {
+        // Создаем кнопку "Начать заново"
+        const restartButton = document.createElement('button');
+        restartButton.textContent = 'Начать заново';
+        restartButton.onclick = function() {
+            resetGame();  // Вызовем функцию для сброса игры
+        };
+
+        // Стилевое позиционирование кнопки
+        restartButton.style.position = 'absolute';
+        restartButton.style.top = '350px'; // Отступ от верхней границы, под картинкой
+        restartButton.style.left = '30px'; // Отступ слева
+        restartButton.style.padding = '10px 20px';
+        restartButton.style.backgroundColor = '#4CAF50'; // Зеленый цвет
+        restartButton.style.color = 'white';
+        restartButton.style.border = 'none';
+        restartButton.style.borderRadius = '5px';
+        restartButton.style.fontSize = '16px';
+
+        // Добавляем кнопку на страницу
+        document.body.appendChild(restartButton);
+    }
+
+    // Функция для сброса игры
+    function resetGame() {
+        fetch('/reset-game', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);  // Показать сообщение о сбросе
+                location.reload();  // Перезагружаем страницу для перезапуска игры
+            })
+            .catch(error => console.error('Ошибка:', error));
+    }
+
 </script>
+
+
 </body>
 </html>
