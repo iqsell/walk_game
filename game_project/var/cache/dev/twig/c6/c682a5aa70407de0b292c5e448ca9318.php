@@ -155,23 +155,30 @@ class __TwigTemplate_ac05a1fb272991842b2de81f437f9dc1 extends Template
 <img src=\"public/images/help.jpg\" alt=\"Help\" class=\"help-img\">
 
 <script>
+    // Переменная для отслеживания состояния игры
+    let gameOver = false;
+
+    // Функция для броска кубиков
+    // Функция для броска кубиков
     function rollDice() {
-        // Генерация случайных значений для двух кубиков
-        var dice1 = Math.floor(Math.random() * 6) + 1; // 1-6
-        var dice2 = Math.floor(Math.random() * 6) + 1; // 1-6
+        if (gameOver) return;
+
+        var dice1 = Math.floor(Math.random() * 6) + 1;
+        var dice2 = Math.floor(Math.random() * 6) + 1;
         var diceResult = dice1 + dice2;
 
-        // Обновление изображений кубиков на экране
+        // Обновляем изображения кубиков
         document.getElementById('dice1').style.backgroundImage = 'url(\"public/images/dice' + dice1 + '.png\")';
         document.getElementById('dice2').style.backgroundImage = 'url(\"public/images/dice' + dice2 + '.png\")';
 
-        // Отправка результата на сервер для обновления позиции игрока
+        // Скрываем кнопку броска
+        document.querySelector('button').style.display = 'none';
+
+        // Отправляем запрос на сервер
         fetch('/update-player-position', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ diceResult: diceResult }),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ diceResult: diceResult })
         })
             .then(response => response.json())
             .then(data => {
@@ -180,19 +187,44 @@ class __TwigTemplate_ac05a1fb272991842b2de81f437f9dc1 extends Template
                     return;
                 }
 
-                // Обновление позиции игрока на поле
+                // Начальная позиция
                 const playerChip = document.querySelector('.chip_player');
-                playerChip.style.top = (data.newCoordinates.y + 30) + 'px';
-                playerChip.style.left = (data.newCoordinates.x + 30) + 'px';
+                let currentX = parseInt(playerChip.style.left);
+                let currentY = parseInt(playerChip.style.top);
 
-                // Если есть сообщение о победе, показываем его
-                if (data.winMessage) {
-                    alert(data.winMessage);  // Покажем сообщение победы
-                    showRestartButton(); // Покажем кнопку для перезапуска игры
-                }
+                // Список шагов
+                const steps = data.steps;
+
+                let currentStep = 0;
+                const interval = setInterval(() => {
+                    if (currentStep >= steps.length) {
+                        clearInterval(interval);
+
+                        // Проверка на победу
+                        if (data.winMessage) {
+                            alert(data.winMessage);
+                            gameOver = true;
+                            showRestartButton();
+                        } else {
+                            setTimeout(() => moveBot(), 1000);  // Переход к ходу бота
+                        }
+                    } else {
+                        const { x, y } = steps[currentStep];
+                        currentX = x + 30;  // Корректируем сдвиг
+                        currentY = y + 30;  // Корректируем сдвиг
+
+                        // Плавное движение
+                        playerChip.style.transition = 'top 0.3s, left 0.3s';  // Плавное движение
+                        playerChip.style.left = `\${currentX}px`;
+                        playerChip.style.top = `\${currentY}px`;
+
+                        currentStep++;
+                    }
+                }, 300);  // Интервал для каждого шага (300ms)
             })
             .catch(error => console.error('Ошибка:', error));
     }
+
 
     // Функция для отображения кнопки \"Начать заново\"
     function showRestartButton() {
@@ -233,8 +265,67 @@ class __TwigTemplate_ac05a1fb272991842b2de81f437f9dc1 extends Template
             })
             .catch(error => console.error('Ошибка:', error));
     }
-    
+
+    function moveBot() {
+        // Проверяем, завершена ли игра
+        if (gameOver) return;
+
+        fetch('/move-bot', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+
+                // Получаем количество клеток для движения
+                const steps = data.steps;
+                const botChip = document.querySelector('.chip_bot');
+
+                // Обновляем фишку через каждый шаг
+                let currentStep = 0;
+
+                function moveToNextStep() {
+                    if (currentStep < steps.length) {
+                        const { x, y } = steps[currentStep];
+                        botChip.style.transition = 'top 0.3s, left 0.3s';  // Плавное движение
+                        botChip.style.top = (y + 70) + 'px';
+                        botChip.style.left = (x + 30) + 'px';
+                        currentStep++;
+                        setTimeout(moveToNextStep, 300); // Переход к следующему шагу через 0.3 секунды
+                    } else {
+                        // Когда шаги завершены, обновляем местоположение фишки
+                        const { x, y } = data.botPosition;
+                        botChip.style.top = (y + 70) + 'px';
+                        botChip.style.left = (x + 30) + 'px';
+
+                        // Если бот победил, показать сообщение
+                        if (data.winMessage) {
+                            alert(data.winMessage);
+                            gameOver = true;
+                            showRestartButton();
+                        } else {
+                            // Показываем кнопку для следующего хода игрока
+                            document.querySelector('button').style.display = 'inline-block';  // Показываем кнопку
+                        }
+                    }
+                }
+
+                moveToNextStep();  // Запускаем движение
+            })
+            .catch(error => console.error('Ошибка:', error));
+    }
+
+
+
 </script>
+
+
 
 
 </body>
@@ -361,23 +452,30 @@ class __TwigTemplate_ac05a1fb272991842b2de81f437f9dc1 extends Template
 <img src=\"public/images/help.jpg\" alt=\"Help\" class=\"help-img\">
 
 <script>
+    // Переменная для отслеживания состояния игры
+    let gameOver = false;
+
+    // Функция для броска кубиков
+    // Функция для броска кубиков
     function rollDice() {
-        // Генерация случайных значений для двух кубиков
-        var dice1 = Math.floor(Math.random() * 6) + 1; // 1-6
-        var dice2 = Math.floor(Math.random() * 6) + 1; // 1-6
+        if (gameOver) return;
+
+        var dice1 = Math.floor(Math.random() * 6) + 1;
+        var dice2 = Math.floor(Math.random() * 6) + 1;
         var diceResult = dice1 + dice2;
 
-        // Обновление изображений кубиков на экране
+        // Обновляем изображения кубиков
         document.getElementById('dice1').style.backgroundImage = 'url(\"public/images/dice' + dice1 + '.png\")';
         document.getElementById('dice2').style.backgroundImage = 'url(\"public/images/dice' + dice2 + '.png\")';
 
-        // Отправка результата на сервер для обновления позиции игрока
+        // Скрываем кнопку броска
+        document.querySelector('button').style.display = 'none';
+
+        // Отправляем запрос на сервер
         fetch('/update-player-position', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ diceResult: diceResult }),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ diceResult: diceResult })
         })
             .then(response => response.json())
             .then(data => {
@@ -386,19 +484,44 @@ class __TwigTemplate_ac05a1fb272991842b2de81f437f9dc1 extends Template
                     return;
                 }
 
-                // Обновление позиции игрока на поле
+                // Начальная позиция
                 const playerChip = document.querySelector('.chip_player');
-                playerChip.style.top = (data.newCoordinates.y + 30) + 'px';
-                playerChip.style.left = (data.newCoordinates.x + 30) + 'px';
+                let currentX = parseInt(playerChip.style.left);
+                let currentY = parseInt(playerChip.style.top);
 
-                // Если есть сообщение о победе, показываем его
-                if (data.winMessage) {
-                    alert(data.winMessage);  // Покажем сообщение победы
-                    showRestartButton(); // Покажем кнопку для перезапуска игры
-                }
+                // Список шагов
+                const steps = data.steps;
+
+                let currentStep = 0;
+                const interval = setInterval(() => {
+                    if (currentStep >= steps.length) {
+                        clearInterval(interval);
+
+                        // Проверка на победу
+                        if (data.winMessage) {
+                            alert(data.winMessage);
+                            gameOver = true;
+                            showRestartButton();
+                        } else {
+                            setTimeout(() => moveBot(), 1000);  // Переход к ходу бота
+                        }
+                    } else {
+                        const { x, y } = steps[currentStep];
+                        currentX = x + 30;  // Корректируем сдвиг
+                        currentY = y + 30;  // Корректируем сдвиг
+
+                        // Плавное движение
+                        playerChip.style.transition = 'top 0.3s, left 0.3s';  // Плавное движение
+                        playerChip.style.left = `\${currentX}px`;
+                        playerChip.style.top = `\${currentY}px`;
+
+                        currentStep++;
+                    }
+                }, 300);  // Интервал для каждого шага (300ms)
             })
             .catch(error => console.error('Ошибка:', error));
     }
+
 
     // Функция для отображения кнопки \"Начать заново\"
     function showRestartButton() {
@@ -439,8 +562,67 @@ class __TwigTemplate_ac05a1fb272991842b2de81f437f9dc1 extends Template
             })
             .catch(error => console.error('Ошибка:', error));
     }
-    
+
+    function moveBot() {
+        // Проверяем, завершена ли игра
+        if (gameOver) return;
+
+        fetch('/move-bot', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+
+                // Получаем количество клеток для движения
+                const steps = data.steps;
+                const botChip = document.querySelector('.chip_bot');
+
+                // Обновляем фишку через каждый шаг
+                let currentStep = 0;
+
+                function moveToNextStep() {
+                    if (currentStep < steps.length) {
+                        const { x, y } = steps[currentStep];
+                        botChip.style.transition = 'top 0.3s, left 0.3s';  // Плавное движение
+                        botChip.style.top = (y + 70) + 'px';
+                        botChip.style.left = (x + 30) + 'px';
+                        currentStep++;
+                        setTimeout(moveToNextStep, 300); // Переход к следующему шагу через 0.3 секунды
+                    } else {
+                        // Когда шаги завершены, обновляем местоположение фишки
+                        const { x, y } = data.botPosition;
+                        botChip.style.top = (y + 70) + 'px';
+                        botChip.style.left = (x + 30) + 'px';
+
+                        // Если бот победил, показать сообщение
+                        if (data.winMessage) {
+                            alert(data.winMessage);
+                            gameOver = true;
+                            showRestartButton();
+                        } else {
+                            // Показываем кнопку для следующего хода игрока
+                            document.querySelector('button').style.display = 'inline-block';  // Показываем кнопку
+                        }
+                    }
+                }
+
+                moveToNextStep();  // Запускаем движение
+            })
+            .catch(error => console.error('Ошибка:', error));
+    }
+
+
+
 </script>
+
+
 
 
 </body>

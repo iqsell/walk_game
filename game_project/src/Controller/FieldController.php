@@ -70,6 +70,16 @@ class FieldController extends AbstractController
             $newCellId = 36; // Игрок фиксируется на клетке 36
         }
 
+        // Генерация списка шагов
+        $steps = [];
+        for ($i = $currentCellId + 1; $i <= $newCellId; $i++) {
+            $field = $entityManager->getRepository(Field::class)->find($i);
+            $steps[] = [
+                'x' => $field->getX(),
+                'y' => $field->getY(),
+            ];
+        }
+
         // Обновляем клетку игрока
         $player->setCurrentCell($newCellId);
         $entityManager->flush();
@@ -84,14 +94,15 @@ class FieldController extends AbstractController
         }
 
         return new JsonResponse([
-            'newCoordinates' => [
-                'id' => $newField->getId(),
+            'steps' => $steps,
+            'winMessage' => $winMessage, // Отправляем сообщение о победе
+            'playerPosition' => [
                 'x' => $newField->getX(),
                 'y' => $newField->getY(),
             ],
-            'winMessage' => $winMessage, // Отправляем сообщение о победе
         ]);
     }
+
 
     #[Route('/reset-game', name: 'reset_game', methods: ['POST'])]
     public function resetGame(EntityManagerInterface $entityManager): JsonResponse
@@ -109,6 +120,61 @@ class FieldController extends AbstractController
 
         return new JsonResponse(['message' => 'Игра сброшена, начните заново']);
     }
+
+    #[Route('/move-bot', name: 'move_bot', methods: ['POST'])]
+    public function moveBot(EntityManagerInterface $entityManager): JsonResponse
+    {
+        // Находим бота
+        $bot = $entityManager->getRepository(Player::class)->findOneBy(['isBot' => true]);
+        if (!$bot) {
+            return new JsonResponse(['error' => 'Bot not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        // Генерация случайного хода для бота (бросок кубиков)
+        $diceResult = rand(1, 6) + rand(1, 6); // Бот кидает два кубика
+
+        // Перемещаем бота
+        $currentCell = $bot->getCurrentCell();
+        $newCellId = $currentCell + $diceResult;
+
+        // Если новая клетка больше 36, фиксируем бота на клетке 36
+        if ($newCellId >= 36) {
+            $newCellId = 36;
+        }
+
+        // Генерируем список шагов
+        $steps = [];
+        for ($i = $currentCell + 1; $i <= $newCellId; $i++) {
+            $field = $entityManager->getRepository(Field::class)->find($i);
+            $steps[] = [
+                'x' => $field->getX(),
+                'y' => $field->getY(),
+            ];
+        }
+
+        // Обновляем клетку бота
+        $bot->setCurrentCell($newCellId);
+        $entityManager->flush();
+
+        // Проверка победы бота
+        if ($newCellId === 36) {
+            return new JsonResponse([
+                'winMessage' => 'Бот победил!',
+                'steps' => $steps,
+                'botPosition' => ['x' => $steps[count($steps) - 1]['x'], 'y' => $steps[count($steps) - 1]['y']],
+            ]);
+        }
+
+        // Если бот не победил, просто возвращаем шаги
+        return new JsonResponse([
+            'steps' => $steps,
+            'botPosition' => ['x' => $steps[count($steps) - 1]['x'], 'y' => $steps[count($steps) - 1]['y']],
+        ]);
+    }
+
+
+
+
 
 
 
