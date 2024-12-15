@@ -64,9 +64,13 @@
 
     <!-- Фишки, -->
     {% for field in coordinates %}
-        <div class="chip chip_bot" style="top: {{ field.y + 70 }}px; left: {{ field.x + 30 }}px;"></div>
-        <div class="chip chip_player" style="top: {{ field.y + 30 }}px; left: {{ field.x + 30 }}px;"></div>
+        {% if field.isBot %}
+            <div class="chip chip_bot" style="top: {{ field.y + 70 }}px; left: {{ field.x + 30 }}px;"></div>
+        {% else %}
+            <div class="chip chip_player" style="top: {{ field.y + 30 }}px; left: {{ field.x + 30 }}px;"></div>
+        {% endif %}
     {% endfor %}
+
 </div>
 
 <!-- Кубики -->
@@ -88,13 +92,33 @@
         // Генерация случайных значений для двух кубиков
         var dice1 = Math.floor(Math.random() * 6) + 1; // 1-6
         var dice2 = Math.floor(Math.random() * 6) + 1; // 1-6
+        var diceResult = dice1 + dice2;
 
         // Обновление изображений кубиков на экране
         document.getElementById('dice1').style.backgroundImage = 'url("public/images/dice' + dice1 + '.png")';
         document.getElementById('dice2').style.backgroundImage = 'url("public/images/dice' + dice2 + '.png")';
 
-        // Здесь можно добавить логику для перемещения фишки пользователя в зависимости от результата
-        console.log('Кубик 1:', dice1, 'Кубик 2:', dice2);
+        // Отправка результата на сервер для обновления позиции игрока
+        fetch('/update-player-position', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ diceResult: diceResult }),
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+
+                // Обновление позиции игрока на поле
+                const playerChip = document.querySelector('.chip_player');
+                playerChip.style.top = (data.newCoordinates.y + 30) + 'px';
+                playerChip.style.left = (data.newCoordinates.x + 30) + 'px';
+            })
+            .catch(error => console.error('Ошибка:', error));
     }
 </script>
 </body>
