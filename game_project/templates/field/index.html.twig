@@ -87,10 +87,8 @@
 <img src="public/images/help.jpg" alt="Help" class="help-img">
 
 <script>
-    // Переменная для отслеживания состояния игры
     let gameOver = false;
 
-    // Функция для броска кубиков
     // Функция для броска кубиков
     function rollDice() {
         if (gameOver) return;
@@ -106,11 +104,11 @@
         // Скрываем кнопку броска
         document.querySelector('button').style.display = 'none';
 
-        // Отправляем запрос на сервер
+        // запрос на сервер
         fetch('/update-player-position', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ diceResult: diceResult })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({diceResult: diceResult})
         })
             .then(response => response.json())
             .then(data => {
@@ -141,9 +139,9 @@
                             setTimeout(() => moveBot(), 1000);  // Переход к ходу бота
                         }
                     } else {
-                        const { x, y } = steps[currentStep];
-                        currentX = x + 30;  // Корректируем сдвиг
-                        currentY = y + 30;  // Корректируем сдвиг
+                        const {x, y} = steps[currentStep];
+                        currentX = x + 30;  // сдвиг
+                        currentY = y + 30;  // сдвиг
 
                         // Плавное движение
                         playerChip.style.transition = 'top 0.3s, left 0.3s';  // Плавное движение
@@ -152,37 +150,36 @@
 
                         currentStep++;
                     }
-                }, 300);  // Интервал для каждого шага (300ms)
+                }, 300);
             })
             .catch(error => console.error('Ошибка:', error));
     }
 
 
-    // Функция для отображения кнопки "Начать заново"
+    // Начать заново
     function showRestartButton() {
-        // Создаем кнопку "Начать заново"
+        // Начать заново
         const restartButton = document.createElement('button');
         restartButton.textContent = 'Начать заново';
-        restartButton.onclick = function() {
-            resetGame();  // Вызовем функцию для сброса игры
+        restartButton.onclick = function () {
+            resetGame();  // для сброса игры
         };
 
-        // Стилевое позиционирование кнопки
+        // Стили кнопки
         restartButton.style.position = 'absolute';
-        restartButton.style.top = '350px'; // Отступ от верхней границы, под картинкой
-        restartButton.style.left = '30px'; // Отступ слева
+        restartButton.style.top = '350px';
+        restartButton.style.left = '30px';
         restartButton.style.padding = '10px 20px';
-        restartButton.style.backgroundColor = '#4CAF50'; // Зеленый цвет
+        restartButton.style.backgroundColor = '#4CAF50';
         restartButton.style.color = 'white';
         restartButton.style.border = 'none';
         restartButton.style.borderRadius = '5px';
         restartButton.style.fontSize = '16px';
 
-        // Добавляем кнопку на страницу
         document.body.appendChild(restartButton);
     }
 
-    // Функция для сброса игры
+    //сброс игры
     function resetGame() {
         fetch('/reset-game', {
             method: 'POST',
@@ -192,14 +189,14 @@
         })
             .then(response => response.json())
             .then(data => {
-                alert(data.message);  // Показать сообщение о сбросе
-                location.reload();  // Перезагружаем страницу для перезапуска игры
+                alert(data.message);  // сброс
+                location.reload();
             })
             .catch(error => console.error('Ошибка:', error));
     }
 
     function moveBot() {
-        // Проверяем, завершена ли игра
+        // завершена ли игра
         if (gameOver) return;
 
         fetch('/move-bot', {
@@ -215,50 +212,45 @@
                     return;
                 }
 
-                // Получаем количество клеток для движения
+                // Получаем количество клеток
                 const steps = data.steps;
                 const botChip = document.querySelector('.chip_bot');
 
-                // Обновляем фишку через каждый шаг
                 let currentStep = 0;
 
                 function moveToNextStep() {
                     if (currentStep < steps.length) {
-                        const { x, y } = steps[currentStep];
+                        const {x, y} = steps[currentStep];
                         botChip.style.transition = 'top 0.3s, left 0.3s';  // Плавное движение
                         botChip.style.top = (y + 70) + 'px';
                         botChip.style.left = (x + 30) + 'px';
                         currentStep++;
-                        setTimeout(moveToNextStep, 300); // Переход к следующему шагу через 0.3 секунды
+                        setTimeout(moveToNextStep, 300);
                     } else {
-                        // Когда шаги завершены, обновляем местоположение фишки
-                        const { x, y } = data.botPosition;
+                        // Когда шаги завершены, обновляем фишки
+                        const {x, y} = data.botPosition;
                         botChip.style.top = (y + 70) + 'px';
                         botChip.style.left = (x + 30) + 'px';
 
-                        // Если бот победил, показать сообщение
+                        // Если бот победил
                         if (data.winMessage) {
                             alert(data.winMessage);
                             gameOver = true;
                             showRestartButton();
                         } else {
-                            // Показываем кнопку для следующего хода игрока
-                            document.querySelector('button').style.display = 'inline-block';  // Показываем кнопку
+                            // кнопка для следующего хода игрока
+                            document.querySelector('button').style.display = 'inline-block';
                         }
                     }
                 }
 
-                moveToNextStep();  // Запускаем движение
+                moveToNextStep();
             })
             .catch(error => console.error('Ошибка:', error));
     }
 
 
-
 </script>
-
-
-
 
 </body>
 </html>

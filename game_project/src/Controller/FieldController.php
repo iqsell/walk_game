@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\DataFixtures\PlayerFixtures;
 use App\Entity\Player;
 use App\Entity\Field;
 use Doctrine\ORM\EntityManagerInterface;
@@ -20,7 +19,7 @@ class FieldController extends AbstractController
         // Получаем всех игроков
         $players = $entityManager->getRepository(Player::class)->findAll();
 
-        // Проверяем, есть ли игроки
+        // есть ли игроки
         if (!$players) {
             throw $this->createNotFoundException('Игроки не найдены');
         }
@@ -29,7 +28,7 @@ class FieldController extends AbstractController
         $coordinates = [];
 
         foreach ($players as $player) {
-            // Получаем поле, на котором находится игрок
+            // Получаем поле
             $currentField = $entityManager->getRepository(Field::class)->find($player->getCurrentCell());
 
             if ($currentField) {
@@ -42,7 +41,6 @@ class FieldController extends AbstractController
             }
         }
 
-        // Передаем данные в шаблон
         return $this->render('field/index.html.twig', [
             'coordinates' => $coordinates,
         ]);
@@ -63,7 +61,7 @@ class FieldController extends AbstractController
         $newCellId = $currentCellId + $diceResult;
 
         if ($newCellId >= 36) {
-            $newCellId = 36; // Игрок фиксируется на клетке 36
+            $newCellId = 36; // финиш
         }
 
         // Генерация списка шагов
@@ -78,38 +76,38 @@ class FieldController extends AbstractController
 
         // Перемещаем игрока на новое поле
         $player->setCurrentCell($newCellId);
-        $entityManager->flush();  // Обновляем позицию игрока
+        $entityManager->flush();
 
-        // Проверка на специальные поля
+        // спец. поля
         $activeFields = [12, 23, 29, 35];
         if (in_array($newCellId, $activeFields)) {
-            // Если попали на специальное поле, откидываем на 3 клетки назад
+            // Если попали на спец поле, откидываем на 3 клетки назад
             $newCellId -= 3;
             $player->setCurrentCell($newCellId);
-            $entityManager->flush();  // Обновляем позицию игрока после откидывания
+            $entityManager->flush();
         }
 
-        // Дополнительные специальные поля с бонусами
+
         $activeFields1 = [7, 27];
         if (in_array($newCellId, $activeFields1)) {
-            // Если попали на специальное поле, двигаем на 4 клетки вперед
+            // на 4 клетки вперед
             $newCellId += 4;
             $player->setCurrentCell($newCellId);
-            $entityManager->flush();  // Обновляем позицию игрока после перемещения вперед
+            $entityManager->flush();
         }
 
         $activeFields2 = [14];
         if (in_array($newCellId, $activeFields2)) {
-            // Если попали на специальное поле, переносим на клетку 22
+            // лестница, переносим на клетку 22
             $newCellId = 22;
             $player->setCurrentCell($newCellId);
-            $entityManager->flush();  // Обновляем позицию игрока после перемещения
+            $entityManager->flush();
         }
 
         // Добавление случайных действий на клетки 5, 11, 16, 25, 32
         $specialFields = [5, 11, 16, 25, 32];
         if (in_array($newCellId, $specialFields)) {
-            $action = rand(1, 4); // Выбираем одно из 4 возможных действий случайным образом
+            $action = rand(1, 4); // шанс 1 из 4
 
             switch ($action) {
                 case 1:
@@ -167,14 +165,10 @@ class FieldController extends AbstractController
     }
 
 
-
-
-
-
     #[Route('/reset-game', name: 'reset_game', methods: ['POST'])]
     public function resetGame(EntityManagerInterface $entityManager): JsonResponse
     {
-        // Находим всех игроков (реальных и ботов)
+        // все игроки
         $players = $entityManager->getRepository(Player::class)->findAll();
 
         foreach ($players as $player) {
@@ -207,15 +201,15 @@ class FieldController extends AbstractController
         // Проверка на активные поля
         $activeFields = [12, 23, 29, 35];
         if (in_array($newCellId, $activeFields)) {
-            $newCellId -= 3; // Возвращаем игрока на 3 клетки назад
+            $newCellId -= 3; //  игрока на 3 клетки назад
         }
 
-        // Если новая клетка больше 36, фиксируем бота на клетке 36
+        // finish
         if ($newCellId >= 36) {
             $newCellId = 36;
         }
 
-        // Генерация списка шагов
+        // список шагов
         $steps = [];
         for ($i = $currentCell + 1; $i <= $newCellId; $i++) {
             $field = $entityManager->getRepository(Field::class)->find($i);
@@ -225,22 +219,22 @@ class FieldController extends AbstractController
             ];
         }
 
-        // Проверка для специальных полей 5, 11, 16, 25, 32
-        $specialFields = [5, 11, 16, 25, 32];
+        // спец поля
+        $specialFields = [5, 11, 16, 21, 25, 32];
         if (in_array($newCellId, $specialFields)) {
-            $action = rand(1, 4); // Выбираем одно из 4 возможных действий случайным образом
+            $action = rand(1, 4); // шанс
 
             switch ($action) {
                 case 1:
-                    // Бот перемещается на 4 клетки вперед
+                    // на 4 клетки вперед
                     $newCellId += 4;
                     break;
                 case 2:
-                    // Бот перемещается на 4 клетки назад
+                    // на 4 клетки назад
                     $newCellId -= 4;
                     break;
                 case 3:
-                    // Противник (игрок) перемещается на 4 клетки вперед
+                    // Противник на 4 клетки вперед
                     $player = $entityManager->getRepository(Player::class)->findOneBy(['isBot' => false]);
                     if ($player) {
                         $playerNewCellId = $player->getCurrentCell() + 4;
@@ -251,7 +245,7 @@ class FieldController extends AbstractController
                     }
                     break;
                 case 4:
-                    // Противник (игрок) перемещается на 4 клетки назад
+                    // Противник на 4 клетки назад
                     $player = $entityManager->getRepository(Player::class)->findOneBy(['isBot' => false]);
                     if ($player) {
                         $playerNewCellId = $player->getCurrentCell() - 4;
@@ -261,13 +255,14 @@ class FieldController extends AbstractController
                         }
                     }
                     break;
+
             }
 
-            // После выполнения действия, обновляем позицию бота
+
             $bot->setCurrentCell($newCellId);
             $entityManager->flush(); // Обновляем позицию бота
         } else {
-            // Если бот не попал на специальное поле, сразу обновляем его координаты
+            // Если бот не попал на специальное поле, обновляем
             $bot->setCurrentCell($newCellId);
             $entityManager->flush();
         }
@@ -291,19 +286,6 @@ class FieldController extends AbstractController
             'botPosition' => ['x' => $steps[count($steps) - 1]['x'], 'y' => $steps[count($steps) - 1]['y']],
         ]);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     /*#[Route('/save-coordinates', name: 'save_coordinates', methods: ['POST'])]
